@@ -1,0 +1,2 @@
+cargo:rustc-env=TYPENUM_BUILD_CONSTS=/Users/aadyakalra/solana/myepicproject/target/release/build/typenum-38231de6a8289b54/out/consts.rs
+cargo:rustc-env=TYPENUM_BUILD_OP=/Users/aadyakalra/solana/myepicproject/target/release/build/typenum-38231de6a8289b54/out/op.rs
