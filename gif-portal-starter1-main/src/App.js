@@ -1,8 +1,9 @@
+import kp from './keypair.json'
 import React,{useEffect, useState} from 'react';
 import twitterLogo from './assets/twitter-logo.svg';
 import './App.css';
 import idl from './idl.json';
-import {Connection, PublicKey, SystemProgram, Transaction, clusterApiUrl} from '@solana/web3.js';
+import {Connection, PublicKey, Transaction, clusterApiUrl} from '@solana/web3.js';
 import {Program, Provider, web3} from '@project-serum/anchor';
 
 // Constants
@@ -10,16 +11,20 @@ const TWITTER_HANDLE = '_buildspace';
 const TWITTER_LINK = `https://twitter.com/${TWITTER_HANDLE}`;
 
 // SystemProgram is a reference to the Solana runtime!
-const { Keypair } = web3;
+const { SystemProgram, Keypair } = web3;
 
 // Create a keypair for the account that will hold the GIF data.
-let baseAccount = Keypair.generate();
+//let baseAccount = Keypair.generate();
+const arr = Object.values(kp._keypair.secretKey)
+const secret = new Uint8Array(arr)
+const baseAccount = web3.Keypair.fromSecretKey(secret)
 
 // Get our program's id from the IDL file.
 const programID = new PublicKey(idl.metadata.address);
 
 // Set our network to devnet.
 const network = clusterApiUrl('devnet');
+
 
 // Controls how we want to acknowledge when a transaction is "done".
 const opts = {
@@ -29,7 +34,6 @@ const opts = {
 const App = () => {
   // State
 const [walletAddress, setWalletAddress] = useState(null);
-// const [wallet, setWallet] = useState(null);
 const [inputValue, setInputValue] = useState('');
 const [gifList, setGifList] = useState([]);
 
@@ -59,7 +63,6 @@ const TEST_GIFS = [
         const response = await solana.connect({OnlyIfTrusted : true});
         console.log(
           'Connected with Public Key:',
-          response,
           response.publicKey.toString()
         );
           /*
@@ -83,45 +86,45 @@ const TEST_GIFS = [
       const response = await solana.connect();
       console.log('Connected with Public Key:', response.publicKey.toString()
       );
-      console.log("connectWallet", response)
+      
       setWalletAddress(response.publicKey.toString());
-      // setWallet(response);
+      
     }
   };
 
   const sendGif = async () => {
-  if (inputValue.length > 0) {
-    console.log('Gif link:', inputValue);
-    setGifList([...gifList, inputValue]);
-    setInputValue('');
-    // await addGif(gifList)
+  // if (inputValue.length > 0) {
+  //   console.log('Gif link:', inputValue);
+  //   setGifList([...gifList, inputValue]);
+  //   setInputValue('');
+      if (inputValue.length === 0) {
+        console.log("No Gif link given")
+        return
+      }
+      setInputValue('');
+    // await addGifs(gifList)
+    try {
+      const provider= getProvider();
+      const program = new Program(idl, programID, provider);
+      console.log('Gif link:', inputValue);
+      await program.rpc.addGifs(inputValue, {
+        accounts: {
+          baseAccount: baseAccount.publicKey,
+          user: provider.wallet.publicKey,
+        },
+      });
+      console.log("Added a new gif to new BaseAccount w/ address:", baseAccount.publicKey.toString());
+      console.log("GIF successfully sent to program", inputValue);
+
+      await getGifList();
+    } catch (error) {
+        console.log("Error sending GIF : ", error)
+    }
+
     
-  } else {
-    console.log('Empty input. Try again.');
-  }
-};
+  };
 
-  // const addGif = async(gifList) =>{
-  //   try {
-  //     const {connection, provider} = getProvider();
-  //     const program = new Program(idl, programID, provider);
-  //     console.log("ping")
-  //     // console.log("baseAccount", baseAccount, baseAccount.publicKey)
-  //     await program.rpc.addGifs({
-  //       accounts: {
-  //         baseAccount: program.account.baseAccount.publicKey,
-  //         user: provider.wallet.publicKey,
-  //       },
-  //       gifLink: gifList[0],
-  //       signers: [program.account.baseAccount]
-  //     });
-  //     console.log("Added a new gif to new BaseAccount w/ address:", baseAccount.publicKey.toString())
-  //     await getGifList();
-
-  //   } catch(error) {
-  //     console.log("Error adding new GIF in BaseAccount account:", error)
-  //   }
-  // }
+  
 
   const onInputChange = (event)=> {
     const {value} = event.target;
@@ -130,54 +133,48 @@ const TEST_GIFS = [
   };
 
   const getProvider = () => {
-  const connection = new Connection(network, opts.preflightCommitment);
+  const connection= new Connection(network, opts.preflightCommitment);
   
   const provider = new Provider(
     connection, window.solana, opts.preflightCommitment,
   );
-	return {connection, provider};
+	return provider;
 }
 
-// const sendSol = async() => {
-//   const { connection, provider} = getProvider()
-//   let transaction = new Transaction().add(
-//     SystemProgram.transfer({
-//       fromPubkey: walletAddress,
-//       toPubkey: walletAddress,
-//       lamports: 100,
-//     })
-//   );
-//   let { blockhash } = await connection.getRecentBlockhash();
-//   transaction.recentBlockhash = blockhash;
-//   transaction.feePayer = walletAddress;
-//   let signed = await wallet.signTransaction(transaction);
-//   let txid = await connection.sendRawTransaction(signed.serialize());
-//   await connection.confirmTransaction(txid);
+//   const sendSol = async() => {
+//     const provider = getProvider()
+//     let wallet = connectWallet()
+//     let transaction = new Transaction().add(
+//       SystemProgram.transfer({
+//         fromPubkey: wallet.publicKey,
+//         toPubkey: wallet.publicKey,
+//         lamports: 1000000,
+//       })
+//     );
+//     let { blockhash } = await connection.getRecentBlockhash();
+//     transaction.recentBlockhash = blockhash;
+//     transaction.feePayer = walletAddress;
+//     let signed = await wallet.signTransaction(transaction);
+//     let txid = await connection.sendRawTransaction(signed.serialize());
+//     await connection.confirmTransaction(txid);
 // }
 
   const createGifAccount = async () => {
     try {
-      const {connection, provider} = getProvider();
+      const provider = getProvider();
       const program = new Program(idl, programID, provider);
       console.log("ping", program)
-      // await program.rpc.startStuffOff({
-      //   accounts: {
-      //     baseAccount: baseAccount.publicKey,
-      //     user: provider.wallet.publicKey,
-      //     systemProgram: SystemProgram.programId,
-      //   },
-      //   signers: [baseAccount]
-      // });
-      // console.log("Created a new BaseAccount w/ address:", baseAccount.publicKey.toString())
-      
-      await program.rpc.addGifs({
+      await program.rpc.startStuffOff({
         accounts: {
           baseAccount: baseAccount.publicKey,
           user: provider.wallet.publicKey,
+          systemProgram: SystemProgram.programId,
         },
-        signers: [baseAccount]
-      }, 'https://giphy.com/gifs/missinglink-link-missing-laika-Lmg7I52eROqQR3pgbJ');
-      console.log("Created a new GIF BaseAccount w/ address:")
+        signers : [baseAccount]
+      });
+      console.log("Created a new BaseAccount w/ address:", baseAccount.publicKey.toString())
+      
+      
       await getGifList();
 
     } catch(error) {
@@ -243,12 +240,12 @@ const TEST_GIFS = [
 
 const getGifList = async() => {
   try {
-    const {connection, provider} = getProvider();
+    const provider = getProvider();
     const program = new Program(idl, programID, provider);
     const account = await program.account.baseAccount.fetch(baseAccount.publicKey);
     
-    console.log("Got the account", account)
-    console.log("account gif list", account)
+    // console.log("Got the account", account)
+    // console.log("account gif list", account.gifList)
     setGifList(account.gifList)
 
   } catch (error) {
