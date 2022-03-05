@@ -141,23 +141,7 @@ const App = () => {
     return provider;
   }
 
-  //   const sendSol = async() => {
-  //     const provider = getProvider()
-  //     let wallet = connectWallet()
-  //     let transaction = new Transaction().add(
-  //       SystemProgram.transfer({
-  //         fromPubkey: wallet.publicKey,
-  //         toPubkey: wallet.publicKey,
-  //         lamports: 1000000,
-  //       })
-  //     );
-  //     let { blockhash } = await connection.getRecentBlockhash();
-  //     transaction.recentBlockhash = blockhash;
-  //     transaction.feePayer = walletAddress;
-  //     let signed = await wallet.signTransaction(transaction);
-  //     let txid = await connection.sendRawTransaction(signed.serialize());
-  //     await connection.confirmTransaction(txid);
-  // }
+  
 
   const createGifAccount = async () => {
     try {
@@ -287,13 +271,6 @@ const App = () => {
           {/* We just need to add the inverse here! */}
           {walletAddress && renderConnectedContainer()}
         </div>
-        {/* <div>
-        <div className="connected-container">
-          <button className="cta-button submit-gif-button" onClick={sendSol}>
-            Send Sol to wallet
-          </button>
-        </div>
-      </div> */}
         <div className="footer-container">
           <img alt="Twitter Logo" className="twitter-logo" src={twitterLogo} />
           <a
